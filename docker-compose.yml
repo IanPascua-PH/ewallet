@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ewalletdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: P@ssw0rd
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./src/main/resources/db/ewallet-schema.sql:/docker-entrypoint-initdb.d/ewallet-schema.sql
+
+  app:
+    build: .
+    ports:
+      - "2080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ewalletdb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: P@ssw0rd
+    depends_on:
+      - postgres
+
+volumes:
+  postgres-data:
