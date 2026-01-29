@@ -18,4 +18,6 @@ public interface WalletService {
 
     TransactionResponse getTransactionDetails(String userId, String transactionId);
 
+    List<TransactionResponse> getTransactionHistory(String userId);
+
 }

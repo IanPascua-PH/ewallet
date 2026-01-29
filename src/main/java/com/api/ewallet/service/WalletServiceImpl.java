@@ -118,7 +118,7 @@ public class WalletServiceImpl implements WalletService {
 
         checkDailyLimit(senderUser.getUserId(), request.getAmount());
 
-        Transaction transaction = createPendingTransaction(senderUser, recipientUser, wallet, request);
+        Transaction transaction = createPendingTransaction(senderUser, recipientUser, request);
         try {
             // Fetch external user data for response
             ExternalUserResponse sender = externalUserService.getByUserId(senderUser.getUserId());
@@ -153,6 +153,30 @@ public class WalletServiceImpl implements WalletService {
         return buildTransactionResponse(transaction, description);
     }
 
+    @Override
+    public List<TransactionResponse> getTransactionHistory(String userId) {
+        log.info("Fetching transaction history for userId: {}", userId);
+
+        userRepository.findOne(UserSpecification.byUserId(userId)
+                        .and(BaseSpecification.isActive()))
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
+
+        List<Transaction> transactions = transactionRepository.findAll(
+                TransactionSpecification.bySenderUserId(userId)
+                        .or(TransactionSpecification.byRecipientUserId(userId))
+                        .and(BaseSpecification.isActive())
+        );
+
+        log.debug("Total transactions found for user {}: {}", userId, transactions.size());
+
+        return transactions.stream()
+                .map(transaction -> {
+                    String description = transaction.getSenderUserId().equals(userId) ? "Transfer Funds" : "Receive Funds";
+                    return buildTransactionResponse(transaction, description);
+                })
+                .toList();
+    }
+
     private User getActiveSender(String userId) {
         User user = userRepository.findOne(UserSpecification.byUserId(userId)
                         .and(BaseSpecification.isActive()))
@@ -178,12 +202,10 @@ public class WalletServiceImpl implements WalletService {
         return user;
     }
 
-    private Transaction createPendingTransaction(User sender, User recipient, Wallet wallet, SendMoneyRequest request) {
+    private Transaction createPendingTransaction(User sender, User recipient, SendMoneyRequest request) {
         return Transaction.builder()
                 .transactionId(IdUtil.generateTransactionId())
-                .senderWalletId(wallet.getWalletId())
                 .senderUserId(sender.getUserId())
-                .recipientWalletId(wallet.getWalletId())
                 .recipientUserId(recipient.getUserId())
                 .referenceId(IdUtil.generateReferenceId())
                 .amount(request.getAmount())
@@ -221,7 +243,7 @@ public class WalletServiceImpl implements WalletService {
         LocalDateTime endOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
         BigDecimal dailyLimit = walletConfigProperties.getDailyLimit();
 
-        Specification<Transaction> spec = TransactionSpecification.bySenderWalletId(userId)
+        Specification<Transaction> spec = TransactionSpecification.bySenderUserId(userId)
                 .and(TransactionSpecification.byTransactionStatus(TransactionStatus.COMPLETED.getCode()))
                 .and(TransactionSpecification.byCreatedAtBetween(startOfDay, endOfDay)
                         .and(BaseSpecification.isActive()));

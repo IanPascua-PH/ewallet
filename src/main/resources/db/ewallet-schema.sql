@@ -29,10 +29,8 @@ CREATE TABLE IF NOT EXISTS wallets (
 CREATE TABLE IF NOT EXISTS transactions (
     id BIGSERIAL PRIMARY KEY,
     transaction_id VARCHAR(30) NOT NULL UNIQUE,
-    sender_wallet_id VARCHAR(20) NOT NULL UNIQUE,
-    recipient_wallet_id VARCHAR(20) NOT NULL UNIQUE,
-    sender_user_id VARCHAR(20) NOT NULL UNIQUE,
-    recipient_user_id VARCHAR(20) NOT NULL UNIQUE,
+    sender_user_id VARCHAR(20) NOT NULL,
+    recipient_user_id VARCHAR(20) NOT NULL,
     reference_id VARCHAR(30) NOT NULL UNIQUE,
     amount DECIMAL(19, 2) NOT NULL DEFAULT 0.00,
     currency VARCHAR(3) NOT NULL DEFAULT 'PHP',
@@ -60,7 +58,3 @@ INSERT INTO wallets (wallet_id, user_id, balance)
 SELECT 'WALLET' || LPAD(ROW_NUMBER() OVER (ORDER BY user_id)::text, 3, '0'), user_id, 1000.00
 FROM users
 ON CONFLICT (user_id) DO NOTHING;
-
-CREATE INDEX IF NOT EXISTS idx_transactions_sender ON transactions(sender_user_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_recipient ON transactions(recipient_user_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);

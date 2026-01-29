@@ -26,12 +26,6 @@ public class Transaction {
     @Column(name = "transaction_id", nullable = false, unique = true, length = 30)
     private String transactionId;
 
-    @Column(name = "sender_wallet_id", nullable = false, length = 20, unique = true)
-    private String senderWalletId;
-
-    @Column(name = "recipient_wallet_id", nullable = false, length = 20, unique = true)
-    private String recipientWalletId;
-
     @Column(name = "sender_user_id", nullable = false, length = 20, unique = true)
     private String senderUserId;
 

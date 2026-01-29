@@ -54,6 +54,19 @@ public class WalletController implements WalletControllerApi {
     }
 
     @Override
+    @GetMapping("/transactionHistory")
+    public ResponseEntity<TransactionHistoryResponse> getTransactionHistory(
+            @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId) {
+        log.info("GET /api/wallet/transactionHistory - userId: {}", userId);
+
+        List<TransactionResponse> transactions = walletService.getTransactionHistory(userId);
+        TransactionHistoryResponse response = TransactionHistoryResponse.builder()
+                .transactions(transactions)
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     @PostMapping("/sendMoney")
     public ResponseEntity<SendMoneyResponse> initiateSendMoney(
             @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId,
