@@ -2,7 +2,6 @@ package com.api.ewallet.integration.getfriendlist;
 
 import org.junit.jupiter.api.Test;
 import org.mockserver.model.HttpRequest;
-import org.springframework.http.MediaType;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;

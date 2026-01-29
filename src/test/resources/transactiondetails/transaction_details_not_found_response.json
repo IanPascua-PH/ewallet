@@ -1,0 +1,10 @@
+{
+  "status": 404,
+  "error": "Not Found Error",
+  "errorDetails": [
+    {
+      "code": "EWLBE404",
+      "message": "User not found"
+    }
+  ]
+}

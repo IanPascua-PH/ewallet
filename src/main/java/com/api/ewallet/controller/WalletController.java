@@ -1,10 +1,7 @@
 package com.api.ewallet.controller;
 
-import com.api.ewallet.model.wallet.FriendListResponse;
+import com.api.ewallet.model.wallet.*;
 import com.api.ewallet.model.wallet.FriendListResponse.Friend;
-import com.api.ewallet.model.wallet.SendMoneyRequest;
-import com.api.ewallet.model.wallet.SendMoneyResponse;
-import com.api.ewallet.model.wallet.WalletBalanceResponse;
 import com.api.ewallet.service.WalletService;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
@@ -47,13 +44,23 @@ public class WalletController implements WalletControllerApi {
     }
 
     @Override
+    @GetMapping("/transactionDetails/{txnId}")
+    public ResponseEntity<TransactionResponse> getTransactionDetails(
+            @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId,
+            @Parameter(description = "Transaction ID", required = true) @PathVariable String txnId) {
+        log.info("GET /api/wallet/transactionDetails - userId: {}", userId);
+
+        return ResponseEntity.ok(walletService.getTransactionDetails(userId, txnId));
+    }
+
+    @Override
     @PostMapping("/sendMoney")
     public ResponseEntity<SendMoneyResponse> initiateSendMoney(
             @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId,
-            @Parameter(description = "Device Name passed in header") @RequestHeader(value = "Device-Name", required = false) String deviceName ,
             @Parameter(description = "Send Money Request", required = true) @Valid @RequestBody SendMoneyRequest request) {
         log.info("POST /api/wallet/sendMoney - userId: {}", userId);
 
-        return ResponseEntity.ok(walletService.initiateSendMoney(userId, deviceName, request));
+        return ResponseEntity.ok(walletService.initiateSendMoney(userId, request));
     }
+
 }

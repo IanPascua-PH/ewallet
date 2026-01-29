@@ -1,21 +1,6 @@
 {
   "transactionId": "TXN202601292026246079",
   "referenceId": "REF732064F0699C",
-  "amount": 1,
-  "currency": "PHP",
   "status": "Completed",
-  "note": "Payment",
-  "deviceName": "Samsung",
-  "senderInfo": {
-    "username": "Kamren",
-    "name": "Chelsey Dietrich",
-    "email": "Lucio_Hettinger@annie.ca",
-    "phoneNumber": "(254)954-1289"
-  },
-  "receipientInfo": {
-    "username": "Samantha",
-    "name": "Clementine Bauch",
-    "email": "Nathan@yesenia.net",
-    "phoneNumber": "1-463-123-4447"
-  }
+  "timeStamp": "2024-01-29 20:26:24"
 }

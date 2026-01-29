@@ -1,9 +1,9 @@
 package com.api.ewallet.integration.sendmoney;
 
 import com.api.ewallet.configuration.properties.WalletConfigProperties;
+import com.api.ewallet.model.entity.Transaction;
 import com.api.ewallet.model.entity.User;
 import com.api.ewallet.model.entity.Wallet;
-import com.api.ewallet.model.entity.Transaction;
 import com.api.ewallet.repository.TransactionRepository;
 import com.api.ewallet.repository.UserRepository;
 import com.api.ewallet.repository.WalletRepository;

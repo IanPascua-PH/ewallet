@@ -8,7 +8,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,8 @@ public class AppExceptionHandler {
         Map<String, String> messageMap = Map.of(
                 "User", "User not found",
                 "Wallet", "Wallet not found",
-                "Recipient", "Recipient not found"
+                "Recipient", "Recipient not found",
+                "Transaction", "Transaction not found"
         );
         String message = messageMap.getOrDefault(ex.getMessage(), ex.getMessage());
         details.add(new ErrorDetail("EWLBE404", message));

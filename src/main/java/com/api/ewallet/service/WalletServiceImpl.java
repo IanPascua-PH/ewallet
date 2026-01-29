@@ -2,30 +2,33 @@ package com.api.ewallet.service;
 
 import com.api.ewallet.configuration.properties.WalletConfigProperties;
 import com.api.ewallet.enums.ActiveStatus;
+import com.api.ewallet.enums.InvalidExceptionEnum;
 import com.api.ewallet.enums.KycStatus;
 import com.api.ewallet.enums.TransactionStatus;
 import com.api.ewallet.exception.*;
-import com.api.ewallet.model.wallet.FriendListResponse.Friend;
-import com.api.ewallet.model.wallet.SendMoneyRequest;
-import com.api.ewallet.model.wallet.SendMoneyResponse;
-import com.api.ewallet.model.wallet.SendMoneyResponse.*;
-import com.api.ewallet.model.wallet.WalletBalanceResponse;
-import com.api.ewallet.model.wallet.WalletBalanceResponse.*;
 import com.api.ewallet.model.entity.Transaction;
 import com.api.ewallet.model.entity.User;
 import com.api.ewallet.model.entity.Wallet;
 import com.api.ewallet.model.external.ExternalUserResponse;
+import com.api.ewallet.model.wallet.FriendListResponse.Friend;
+import com.api.ewallet.model.wallet.SendMoneyRequest;
+import com.api.ewallet.model.wallet.SendMoneyResponse;
+import com.api.ewallet.model.wallet.TransactionResponse;
+import com.api.ewallet.model.wallet.TransactionResponse.RecipientInfo;
+import com.api.ewallet.model.wallet.TransactionResponse.SenderInfo;
+import com.api.ewallet.model.wallet.WalletBalanceResponse;
+import com.api.ewallet.model.wallet.WalletBalanceResponse.AvailableBalance;
+import com.api.ewallet.model.wallet.WalletBalanceResponse.Limit;
 import com.api.ewallet.repository.TransactionRepository;
 import com.api.ewallet.repository.UserRepository;
 import com.api.ewallet.repository.WalletRepository;
 import com.api.ewallet.repository.specification.BaseSpecification;
+import com.api.ewallet.repository.specification.TransactionSpecification;
 import com.api.ewallet.repository.specification.UserSpecification;
 import com.api.ewallet.repository.specification.WalletSpecification;
-import com.api.ewallet.repository.specification.TransactionSpecification;
 import com.api.ewallet.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,17 +52,13 @@ public class WalletServiceImpl implements WalletService {
     private final TransactionRepository transactionRepository;
     private final WalletConfigProperties walletConfigProperties;
 
-    private final static String USER = "User";
-    private final static String WALLET = "Wallet";
-    private final static String RECIPIENT = "Recipient";
-
     @Override
     public List<Friend> getFriendList(String userId){
         log.info("Retrieving friend list for userId: {}", userId);
 
         User currentUser = userRepository.findOne(UserSpecification.byUserId(userId)
                 .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(USER));
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
 
         List<User> userList = userRepository.findAll();
         log.debug("Total users found: {}", userList.size() - 1);
@@ -76,10 +75,10 @@ public class WalletServiceImpl implements WalletService {
 
         User currentUser = userRepository.findOne(UserSpecification.byUserId(userId)
                         .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(USER));
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
         Wallet wallet = walletRepository.findOne(WalletSpecification.byUserId(currentUser.getUserId())
                         .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(WALLET));
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.WALLET.getCode()));
 
         log.debug("Wallet balance for user {}: {} {}", userId, wallet.getBalance(), wallet.getCurrency());
 
@@ -99,7 +98,7 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional()
-    public SendMoneyResponse initiateSendMoney(String userId, String deviceName, SendMoneyRequest request) {
+    public SendMoneyResponse initiateSendMoney(String userId, SendMoneyRequest request) {
         log.info("Initiating send money for userId: {}", userId);
 
         User senderUser = getActiveSender(userId);
@@ -110,18 +109,24 @@ public class WalletServiceImpl implements WalletService {
             throw new InvalidTransactionException("Invalid transaction. Unable to send to own wallet.");
         }
 
-        checkBalance(senderUser.getUserId(), request.getAmount());
+        Wallet wallet = walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.WALLET.getCode()));
+        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+            log.error("Insufficient balance. Available: {}, Required: {}", wallet.getBalance(), request.getAmount());
+            throw new InsufficientBalanceException("Insufficient balance");
+        }
+
         checkDailyLimit(senderUser.getUserId(), request.getAmount());
 
-        Transaction transaction = createPendingTransaction(senderUser, recipientUser, request);
+        Transaction transaction = createPendingTransaction(senderUser, recipientUser, wallet, request);
         try {
-            performTransfer(senderUser.getUserId(), recipientUser.getUserId(), request.getAmount(), transaction);
-
             // Fetch external user data for response
             ExternalUserResponse sender = externalUserService.getByUserId(senderUser.getUserId());
             ExternalUserResponse recipient = externalUserService.getByUserId(recipientUser.getUserId());
 
-            return buildTransactionResponse(deviceName, transaction, sender, recipient);
+            performTransfer(senderUser.getUserId(), recipientUser.getUserId(), request.getAmount(), transaction);
+
+            return buildSendMoneyResponse(transaction, sender, recipient);
         } catch (Exception ex) {
             transaction.setTransactionStatus(TransactionStatus.FAILED.getCode());
             transactionRepository.save(transaction);
@@ -130,10 +135,28 @@ public class WalletServiceImpl implements WalletService {
         }
     }
 
+    @Override
+    public TransactionResponse getTransactionDetails(String userId, String transactionId){
+        log.info("Fetching transaction details for transactionId: {} by user: {}", transactionId, userId);
+
+        User user = userRepository.findOne(UserSpecification.byUserId(userId)
+                        .and(BaseSpecification.isActive()))
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
+
+        Transaction transaction = transactionRepository.findOne(TransactionSpecification.bySenderUserId(userId)
+                        .or(TransactionSpecification.byRecipientUserId(userId))
+                        .and(BaseSpecification.isActive()))
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.TRANSACTION.getCode()));
+
+        String description = transaction.getSenderUserId().equals(user.getUserId()) ? "Transfer Funds" : "Receive Funds";
+
+        return buildTransactionResponse(transaction, description);
+    }
+
     private User getActiveSender(String userId) {
         User user = userRepository.findOne(UserSpecification.byUserId(userId)
                         .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(USER));
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
 
         if (!Objects.equals(user.getKycStatus(), KycStatus.VERIFIED.getCode())) {
             log.error("Invalid transaction. User {} is not verified yet.", userId);
@@ -146,7 +169,7 @@ public class WalletServiceImpl implements WalletService {
         User user = userRepository.findOne(UserSpecification.byUsername(username)
                         .and(UserSpecification.byPhoneNumber(phoneNumber))
                         .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(RECIPIENT));
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.RECIPIENT.getCode()));
 
         if (!Objects.equals(user.getKycStatus(), KycStatus.VERIFIED.getCode())) {
             log.error("Invalid transaction. Recipient {} is not verified yet.", user.getUserId());
@@ -155,11 +178,13 @@ public class WalletServiceImpl implements WalletService {
         return user;
     }
 
-    private Transaction createPendingTransaction(User sender, User recipient, SendMoneyRequest request) {
+    private Transaction createPendingTransaction(User sender, User recipient, Wallet wallet, SendMoneyRequest request) {
         return Transaction.builder()
                 .transactionId(IdUtil.generateTransactionId())
-                .senderWalletId(sender.getUserId())
-                .recipientWalletId(recipient.getUserId())
+                .senderWalletId(wallet.getWalletId())
+                .senderUserId(sender.getUserId())
+                .recipientWalletId(wallet.getWalletId())
+                .recipientUserId(recipient.getUserId())
                 .referenceId(IdUtil.generateReferenceId())
                 .amount(request.getAmount())
                 .currency("PHP")
@@ -191,16 +216,6 @@ public class WalletServiceImpl implements WalletService {
                 .build();
     }
 
-    private void checkBalance(String userId, BigDecimal amount) {
-        Wallet wallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException(WALLET));
-
-        if (wallet.getBalance().compareTo(amount) < 0) {
-            log.error("Insufficient balance. Available: {}, Required: {}", wallet.getBalance(), amount);
-            throw new InsufficientBalanceException("Insufficient balance");
-        }
-    }
-
     private void checkDailyLimit(String userId, BigDecimal amount) {
         LocalDateTime startOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         LocalDateTime endOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
@@ -228,7 +243,7 @@ public class WalletServiceImpl implements WalletService {
     private void deductBalance(String userId, BigDecimal amount) {
         log.debug("Deducting {} from userId: {}", amount, userId);
         Wallet wallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException(WALLET));
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.WALLET.getCode()));
 
         BigDecimal newBalance = wallet.getBalance().subtract(amount);
         wallet.setBalance(newBalance);
@@ -240,7 +255,7 @@ public class WalletServiceImpl implements WalletService {
     private void creditBalance(String userId, BigDecimal amount) {
         log.debug("Crediting {} to userId: {}", amount, userId);
         Wallet wallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException(WALLET));
+                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.WALLET.getCode()));
 
         BigDecimal newBalance = wallet.getBalance().add(amount);
         wallet.setBalance(newBalance);
@@ -249,19 +264,33 @@ public class WalletServiceImpl implements WalletService {
         log.debug("New balance for userId {}: {}", userId, newBalance);
     }
 
-    private SendMoneyResponse buildTransactionResponse(
-            String deviceName,
+    private SendMoneyResponse buildSendMoneyResponse(
             Transaction transaction,
             ExternalUserResponse sender,
             ExternalUserResponse recipient) {
         return SendMoneyResponse.builder()
                 .transactionId(transaction.getTransactionId())
                 .referenceId(transaction.getReferenceId())
+                .status(TransactionStatus.getDescription(transaction.getTransactionStatus()))
+                .timeStamp(LocalDateTime.now())
+                .build();
+    }
+
+    private TransactionResponse buildTransactionResponse(
+           Transaction transaction, String description) {
+        ExternalUserResponse sender = externalUserService.getByUserId(transaction.getSenderUserId());
+        ExternalUserResponse recipient = externalUserService.getByUserId(transaction.getRecipientUserId());
+
+        return TransactionResponse.builder()
+                .transactionId(transaction.getTransactionId())
+                .referenceId(transaction.getReferenceId())
+                .description(description)
                 .senderInfo(SenderInfo.builder()
                         .username(sender.getUsername())
                         .name(sender.getName())
                         .email(sender.getEmail())
                         .phoneNumber(sender.getPhone())
+                        .senderNote(transaction.getNote())
                         .build())
                 .recipientInfo(RecipientInfo.builder()
                         .username(recipient.getUsername())
@@ -272,12 +301,6 @@ public class WalletServiceImpl implements WalletService {
                 .amount(transaction.getAmount())
                 .currency(transaction.getCurrency())
                 .status(TransactionStatus.getDescription(transaction.getTransactionStatus()))
-                .note(transaction.getNote())
-                .deviceName(deviceName)
                 .build();
     }
-
-
-
-
 }

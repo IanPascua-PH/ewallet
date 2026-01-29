@@ -1,0 +1,21 @@
+{
+  "transactionId": "TXN202601300105164BC0",
+  "referenceId": "REF8C6C0F811B27",
+  "amount": 1.00,
+  "currency": "PHP",
+  "status": "Completed",
+  "description": "Transfer Funds",
+  "senderInfo": {
+    "username": "Samantha",
+    "name": "Clementine Bauch",
+    "email": "Nathan@yesenia.net",
+    "phoneNumber": "1-463-123-4447",
+    "senderNote": "Payment"
+  },
+  "recipientInfo": {
+    "username": "Kamren",
+    "name": "Chelsey Dietrich",
+    "email": "Lucio_Hettinger@annie.ca",
+    "phoneNumber": "(254)954-1289"
+  }
+}

@@ -29,8 +29,10 @@ CREATE TABLE IF NOT EXISTS wallets (
 CREATE TABLE IF NOT EXISTS transactions (
     id BIGSERIAL PRIMARY KEY,
     transaction_id VARCHAR(30) NOT NULL UNIQUE,
-    sender_wallet_id VARCHAR(20) NOT NULL,
-    recipient_wallet_id VARCHAR(20) NOT NULL,
+    sender_wallet_id VARCHAR(20) NOT NULL UNIQUE,
+    recipient_wallet_id VARCHAR(20) NOT NULL UNIQUE,
+    sender_user_id VARCHAR(20) NOT NULL UNIQUE,
+    recipient_user_id VARCHAR(20) NOT NULL UNIQUE,
     reference_id VARCHAR(30) NOT NULL UNIQUE,
     amount DECIMAL(19, 2) NOT NULL DEFAULT 0.00,
     currency VARCHAR(3) NOT NULL DEFAULT 'PHP',
@@ -38,13 +40,11 @@ CREATE TABLE IF NOT EXISTS transactions (
     transaction_status VARCHAR(1) NOT NULL DEFAULT '0',
     status VARCHAR(1) NOT NULL DEFAULT '1',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT amount_non_negative CHECK (amount >= 0),
-    CONSTRAINT different_wallets CHECK (sender_wallet_id != recipient_wallet_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO users (user_id, full_name, user_name, email, phone_number, kyc_status, date_of_birth, address, status) VALUES
-    ('USER001', 'User One', 'username1', 'user1@example.com', '09171234567', '0', '1990-01-01', 'Address 1', '0'),
+    ('USER001', 'User One', 'username1', 'user1@example.com', '09171234567', '1', '1990-01-01', 'Address 1', '1'),
     ('USER002', 'User Two', 'username2', 'user2@example.com', '09181234567', '0', '1991-02-02', 'Address 2', '0'),
     ('USER003', 'User Three', 'username3', 'user3@example.com', '09191234567', '1', '1992-03-03', 'Address 3', '1'),
     ('USER004', 'User Four', 'username4', 'user4@example.com', '09201234567', '0', '1993-04-04', 'Address 4', '0'),
@@ -61,6 +61,6 @@ SELECT 'WALLET' || LPAD(ROW_NUMBER() OVER (ORDER BY user_id)::text, 3, '0'), use
 FROM users
 ON CONFLICT (user_id) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_transactions_sender ON transactions(sender_wallet_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_recipient ON transactions(recipient_wallet_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_sender ON transactions(sender_user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_recipient ON transactions(recipient_user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);

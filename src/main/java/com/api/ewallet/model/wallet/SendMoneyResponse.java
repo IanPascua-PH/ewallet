@@ -1,11 +1,12 @@
 package com.api.ewallet.model.wallet;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -17,45 +18,9 @@ public class SendMoneyResponse {
 
     private String referenceId;
 
-    private BigDecimal amount;
-
-    private String currency;
-
     private String status;
 
-    private String note;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime timeStamp;
 
-    private String deviceName;
-
-    private SenderInfo senderInfo;
-
-    private RecipientInfo recipientInfo;
-
-    @Data
-    @Builder
-    public static class SenderInfo {
-
-        private String username;
-
-        private String name;
-
-        private String email;
-
-        private String phoneNumber;
-
-    }
-
-    @Data
-    @Builder
-    public static class RecipientInfo {
-
-        private String username;
-
-        private String name;
-
-        private String email;
-
-        private String phoneNumber;
-
-    }
 }

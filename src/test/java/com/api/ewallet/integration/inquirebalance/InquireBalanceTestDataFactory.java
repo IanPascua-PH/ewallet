@@ -20,11 +20,6 @@ public abstract class InquireBalanceTestDataFactory extends EWalletApplicationTe
             .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .withBody(getJsonResponse("balance_success"));
 
-    protected static final HttpResponse EXTERNAL_NOT_FOUND_RESPONSE = HttpResponse.response()
-            .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .withStatusCode(404)
-            .withBody(getJsonResponse("balance_not_found"));
-
     protected static HttpRequest createExternalRequest(String uri, String userId) {
         return HttpRequest.request(uri + userId)
                 .withHeader(HttpHeaders.ACCEPT, "application/json, application/*+json")

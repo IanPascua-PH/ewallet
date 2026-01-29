@@ -1,8 +1,8 @@
-package com.api.ewallet.integration.sendmoney;
+package com.api.ewallet.integration.transactiondetails;
 
-import com.api.ewallet.configuration.properties.WalletConfigProperties;
+import com.api.ewallet.integration.inquirebalance.InquireBalanceTestDataFactory;
+import com.api.ewallet.model.entity.Transaction;
 import com.api.ewallet.model.entity.User;
-import com.api.ewallet.model.entity.Wallet;
 import com.api.ewallet.model.external.ExternalUserResponse;
 import com.api.ewallet.repository.TransactionRepository;
 import com.api.ewallet.repository.UserRepository;
@@ -23,30 +23,24 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class SendMoneySuccessIT extends SendMoneyTestDataFactory {
+class TransactionDetailsSuccessIT extends TransactionDetailsTestDataFactory {
 
     @MockBean
     private UserRepository userRepository;
 
     @MockBean
-    private WalletRepository walletRepository;
-
-    @MockBean
     private TransactionRepository transactionRepository;
-
-    @MockBean
-    private WalletConfigProperties walletConfigProperties;
 
     @MockBean
     private ExternalUserService externalUserService;
 
     @Test
-    void testSendMoneySuccessIT() throws Exception {
+    void testTransactionDetailsSuccessIT() throws Exception {
         User senderUser = User.builder()
                 .id(3L)
                 .userId("USER003")
@@ -61,36 +55,25 @@ class SendMoneySuccessIT extends SendMoneyTestDataFactory {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        User recipientUser = User.builder()
-                .id(7L)
-                .userId("USER007")
-                .fullName("User Seven")
-                .username("user7")
-                .email("user7@example.com")
-                .phoneNumber("09231234567")
-                .kycStatus("1")
-                .dateOfBirth(LocalDate.of(1996, 7, 7))
-                .address("Address 7")
-                .status("1")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-        Wallet wallet = Wallet.builder()
-                .id(3L)
-                .walletId("WALLET003")
-                .userId("USER003")
-                .balance(BigDecimal.valueOf(1000.00))
+
+        Transaction transaction = Transaction.builder()
+                .transactionId("TXN001")
+                .senderUserId("USER003")
+                .recipientUserId("USER007")
+                .referenceId("REF001")
+                .amount(BigDecimal.valueOf(100.00))
                 .currency("PHP")
+                .transactionStatus("1")
                 .status("1")
+                .note("Test transaction")
+                .createdAt(LocalDateTime.now())
                 .build();
 
         when(userRepository.findOne(any(Specification.class)))
-                .thenReturn(Optional.of(senderUser))
-                .thenReturn(Optional.of(recipientUser));
-        when(walletRepository.findByUserId(anyString()))
-                .thenReturn(Optional.of(wallet));
-        when(transactionRepository.findAll(any(Specification.class))).thenReturn(List.of());
-        when(walletConfigProperties.getDailyLimit()).thenReturn(BigDecimal.valueOf(30000.00));
+                .thenReturn(Optional.of(senderUser));
+
+        when(transactionRepository.findOne(any(Specification.class))).thenReturn(Optional.of(transaction));
+
         when(externalUserService.getByUserId("USER003")).thenReturn(ExternalUserResponse.builder()
                 .name("User Three")
                 .username("user3")
@@ -107,13 +90,16 @@ class SendMoneySuccessIT extends SendMoneyTestDataFactory {
         mockServer.when(createExternalRequest(EXTERNAL_URI, "USER003")).respond(EXTERNAL_RESPONSE);
         mockServer.when(createExternalRequest(EXTERNAL_URI, "USER007")).respond(EXTERNAL_RESPONSE);
 
-        mockMvc.perform(post(URI).headers(createJsonHeaders("USER003"))
-                        .content(mockRequest("", "09231234567")))
+        mockMvc.perform(get(URI).headers(createJsonHeaders("USER003")))
                 .andExpect(status().is2xxSuccessful())
                 .andExpect(jsonPath("$.transactionId", not(emptyString())))
                 .andExpect(jsonPath("$.referenceId", not(emptyString())))
+                .andExpect(jsonPath("$.amount", not(emptyString())))
+                .andExpect(jsonPath("$.currency", not(emptyString())))
                 .andExpect(jsonPath("$.status", not(emptyString())))
-                .andExpect(jsonPath("$.timeStamp", not(emptyString())))
+                .andExpect(jsonPath("$.description", not(emptyString())))
+                .andExpect(jsonPath("$.senderInfo").isNotEmpty())
+                .andExpect(jsonPath("$.recipientInfo").isNotEmpty())
                 .andDo(print())
                 .andReturn();
     }
