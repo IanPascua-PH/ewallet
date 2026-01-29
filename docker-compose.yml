@@ -14,9 +14,12 @@ services:
       - ./src/main/resources/db/ewallet-schema.sql:/docker-entrypoint-initdb.d/ewallet-schema.sql
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ewallet_app
     ports:
-      - "2080:8080"
+      - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ewalletdb
       SPRING_DATASOURCE_USERNAME: admin
