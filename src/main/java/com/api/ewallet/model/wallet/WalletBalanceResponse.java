@@ -1,4 +1,4 @@
-package com.api.ewallet.model.api.wallet;
+package com.api.ewallet.model.wallet;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;

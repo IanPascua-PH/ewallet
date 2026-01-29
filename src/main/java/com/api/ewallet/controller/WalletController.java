@@ -1,18 +1,17 @@
 package com.api.ewallet.controller;
 
-import com.api.ewallet.model.api.wallet.FriendListResponse;
-import com.api.ewallet.model.api.wallet.FriendListResponse.Friend;
-import com.api.ewallet.model.api.wallet.WalletBalanceResponse;
+import com.api.ewallet.model.wallet.FriendListResponse;
+import com.api.ewallet.model.wallet.FriendListResponse.Friend;
+import com.api.ewallet.model.wallet.SendMoneyRequest;
+import com.api.ewallet.model.wallet.SendMoneyResponse;
+import com.api.ewallet.model.wallet.WalletBalanceResponse;
 import com.api.ewallet.service.WalletService;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -45,5 +44,16 @@ public class WalletController implements WalletControllerApi {
         log.info("GET /api/wallet/balance - userId: {}", userId);
 
         return ResponseEntity.ok(walletService.getWalletBalance(userId));
+    }
+
+    @Override
+    @PostMapping("/sendMoney")
+    public ResponseEntity<SendMoneyResponse> initiateSendMoney(
+            @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId,
+            @Parameter(description = "Device Name passed in header") @RequestHeader(value = "Device-Name", required = false) String deviceName ,
+            @Parameter(description = "Send Money Request", required = true) @Valid @RequestBody SendMoneyRequest request) {
+        log.info("POST /api/wallet/sendMoney - userId: {}", userId);
+
+        return ResponseEntity.ok(walletService.initiateSendMoney(userId, deviceName, request));
     }
 }

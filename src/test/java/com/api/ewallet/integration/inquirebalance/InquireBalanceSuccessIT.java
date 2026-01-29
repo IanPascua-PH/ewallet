@@ -18,7 +18,7 @@ class InquireBalanceSuccessIT extends InquireBalanceTestDataFactory {
                 .andExpect(jsonPath("$.walletId").value("WALLET001"))
                 .andExpect(jsonPath("$.availableBalance").isNotEmpty())
                 .andExpect(jsonPath("$.limits").isNotEmpty())
-                .andExpect(jsonPath("$.walletStatus").value("active"))
+                .andExpect(jsonPath("$.walletStatus").value("Active"))
                 .andDo(print())
                 .andReturn();
     }

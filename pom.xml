@@ -126,13 +126,10 @@
                         <configuration>
                             <dataFile>${jacoco.target.file.it}</dataFile>
                             <outputDirectory>target/jacoco-it</outputDirectory>
-                            <excludes>
-                                <exclude>com/api/ewallet/repository/specification/**</exclude>
-                                <exclude>com/api/ewallet/model/**</exclude>
-                                <exclude>com/api/ewallet/exception/**</exclude>
-                                <exclude>com/api/ewallet/configuration/properties/**</exclude>
-                                <exclude>com/api/ewallet/EWalletApplication*</exclude>
-                            </excludes>
+                            <includes>
+                                <include>com/api/ewallet/service/**</include>
+                                <include>com/api/ewallet/controller/**</include>
+                            </includes>
                         </configuration>
                     </execution>
                 </executions>

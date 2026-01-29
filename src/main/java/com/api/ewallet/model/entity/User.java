@@ -26,6 +26,9 @@ public class User {
     @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
 
+    @Column(name = "user_name", nullable = false, unique = true)
+    private String username;
+
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
@@ -35,7 +38,7 @@ public class User {
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
 
-    @Column(name = "kyc_status", nullable = false)
+    @Column(name = "kyc_status", nullable = false, length = 1)
     private String kycStatus;
 
     @Column(name = "date_of_birth")
@@ -44,7 +47,7 @@ public class User {
     @Column(name = "address")
     private String address;
 
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, length = 1)
     private String status;
 
     @CreationTimestamp
