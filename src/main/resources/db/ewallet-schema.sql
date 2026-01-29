@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS wallets (
     user_id VARCHAR(20) NOT NULL UNIQUE REFERENCES users(user_id),
     balance DECIMAL(19, 2) NOT NULL DEFAULT 0.00,
     currency VARCHAR(3) NOT NULL DEFAULT 'PHP',
+    wallet_status VARCHAR(20) NOT NULL DEFAULT 'active',
+    daily_limit DECIMAL(19, 2) NOT NULL DEFAULT 1000.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT balance_non_negative CHECK (balance >= 0)

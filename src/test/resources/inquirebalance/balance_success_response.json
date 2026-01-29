@@ -1,0 +1,10 @@
+{
+  "availableBalance": {
+    "amount": 1000.00,
+    "currency": "PHP"
+  },
+  "limits": {
+    "dailyLimit": 1000.00
+  },
+  "lastUpdated": "2026-01-29 04:49:04"
+}

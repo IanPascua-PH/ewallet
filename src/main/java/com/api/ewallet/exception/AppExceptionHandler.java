@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
@@ -17,7 +18,12 @@ public class AppExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
         log.error("NotFoundException: {}", ex.getMessage());
         List<ErrorDetail> details = new ArrayList<>();
-        details.add(new ErrorDetail("EWLBE404", "userId not found"));
+        Map<String, String> messageMap = Map.of(
+                "User", "User not found",
+                "Wallet", "Wallet not found"
+        );
+        String message = messageMap.getOrDefault(ex.getMessage(), ex.getMessage());
+        details.add(new ErrorDetail("EWLBE404", message));
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found Error")

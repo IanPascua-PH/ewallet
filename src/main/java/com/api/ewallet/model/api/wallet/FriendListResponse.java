@@ -1,4 +1,4 @@
-package com.api.ewallet.model.api.friend;
+package com.api.ewallet.model.api.wallet;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

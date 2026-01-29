@@ -1,11 +1,13 @@
 package com.api.ewallet.controller;
 
-import com.api.ewallet.model.api.friend.FriendListResponse;
-import com.api.ewallet.model.api.friend.FriendListResponse.Friend;
+import com.api.ewallet.model.api.wallet.FriendListResponse;
+import com.api.ewallet.model.api.wallet.FriendListResponse.Friend;
+import com.api.ewallet.model.api.wallet.WalletBalanceResponse;
 import com.api.ewallet.service.WalletService;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -24,13 +26,24 @@ public class WalletController implements WalletControllerApi {
 
     @Override
     @GetMapping("/getFriendList")
-    public ResponseEntity<FriendListResponse> getFriendList(@Parameter(description = "User ID passed in header", required = true)
-                                                             @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<FriendListResponse> getFriendList(
+            @Parameter(description = "User ID passed in header", required = true)
+            @RequestHeader("X-User-Id") String userId) {
         log.info("GET /api/friend - userId: {}", userId);
         List<Friend> friendList = walletService.getFriendList(userId);
         FriendListResponse response = FriendListResponse.builder()
                 .friendList(friendList)
                 .build();
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/inquireBalance")
+    public ResponseEntity<WalletBalanceResponse> getWalletBalance(
+            @Parameter(description = "User ID passed in header", required = true)
+            @RequestHeader("X-User-Id") String userId) {
+        log.info("GET /api/wallet/balance - userId: {}", userId);
+
+        return ResponseEntity.ok(walletService.getWalletBalance(userId));
     }
 }
