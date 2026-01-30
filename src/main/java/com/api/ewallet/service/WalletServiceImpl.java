@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -97,7 +98,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    @Transactional()
+    @Transactional(noRollbackFor = TransactionFailedException.class)
     public SendMoneyResponse initiateSendMoney(String userId, SendMoneyRequest request) {
         log.info("Initiating send money for userId: {}", userId);
 
@@ -119,8 +120,9 @@ public class WalletServiceImpl implements WalletService {
         checkDailyLimit(senderUser.getUserId(), request.getAmount());
 
         Transaction transaction = createPendingTransaction(senderUser, recipientUser, request);
+        transactionRepository.saveAndFlush(transaction);
+
         try {
-            // Fetch external user data for response
             ExternalUserResponse sender = externalUserService.getByUserId(senderUser.getUserId());
             ExternalUserResponse recipient = externalUserService.getByUserId(recipientUser.getUserId());
 
@@ -128,10 +130,14 @@ public class WalletServiceImpl implements WalletService {
 
             return buildSendMoneyResponse(transaction, sender, recipient);
         } catch (Exception ex) {
-            log.error("Transaction failed: ", ex);
+            log.error("Transaction {} failed: {}", transaction.getTransactionId(), ex.getMessage());
+
+            updateTransactionStatus(transaction, TransactionStatus.FAILED.getCode());
             throw new TransactionFailedException("Transaction failed");
         }
     }
+
+
 
     @Override
     public TransactionResponse getTransactionDetails(String userId, String transactionId){
@@ -323,4 +329,11 @@ public class WalletServiceImpl implements WalletService {
                 .status(TransactionStatus.getDescription(transaction.getTransactionStatus()))
                 .build();
     }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateTransactionStatus(Transaction transaction, String status) {
+        transaction.setTransactionStatus(status);
+        transactionRepository.save(transaction);
+    }
+
 }

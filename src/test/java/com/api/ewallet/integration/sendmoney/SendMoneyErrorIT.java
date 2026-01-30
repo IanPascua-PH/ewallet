@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.MediaType;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -25,6 +28,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class SendMoneyErrorIT extends SendMoneyTestDataFactory{
 
@@ -39,6 +46,9 @@ class SendMoneyErrorIT extends SendMoneyTestDataFactory{
 
     @MockBean
     private WalletConfigProperties walletConfigProperties;
+
+    @Captor
+    ArgumentCaptor<Transaction> transactionCaptor;
 
     @Test
     void testUserNotFoundIT() throws Exception{
@@ -275,6 +285,11 @@ class SendMoneyErrorIT extends SendMoneyTestDataFactory{
                 .andExpect(jsonPath("$.errorDetails[0].message").value("Transaction failed"))
                 .andDo(print())
                 .andReturn();
+
+        // Verify that transaction was updated to FAILED
+        verify(transactionRepository, times(1)).save(transactionCaptor.capture());
+        List<Transaction> capturedTransactions = transactionCaptor.getAllValues();
+        assertThat(capturedTransactions.get(0).getTransactionStatus()).isEqualTo("2"); // FAILED
     }
 
     @Test

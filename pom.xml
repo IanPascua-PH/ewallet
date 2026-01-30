@@ -129,6 +129,7 @@
                             <includes>
                                 <include>com/api/ewallet/service/**</include>
                                 <include>com/api/ewallet/controller/**</include>
+                                <include>com/api/ewallet/job/**</include>
                             </includes>
                         </configuration>
                     </execution>

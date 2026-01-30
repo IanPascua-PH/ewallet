@@ -45,7 +45,9 @@ This is a Spring Boot-based e-wallet microservice that provides functionalities 
 ### Transaction Management
 - Uses Spring's `@Transactional` for managing database transactions.
 - Implements pessimistic locking for concurrent wallet updates.
-- Saves completed transactions in the database.
+- Saves transactions with initial "PENDING" status, updates to "COMPLETED" on success or "FAILED" on error/scheduled cleanup.
+- Scheduled job (configurable, every 5 minutes) marks stuck "PENDING" transactions (>3 minutes old) as "FAILED" for auditing.
+- Database indexes on transaction_status, created_at, user_id for query optimization.
 
 ### Testing
 - Integration tests with MockMvc and mocked repositories to avoid DB dependencies.
@@ -130,7 +132,7 @@ The API is documented using OpenAPI/Swagger. Below is a summary of the endpoints
 1. User sends POST /sendMoney with userId and request.
 2. Controller validates header, calls Service.initiateSendMoney().
 3. Service validates users, checks balance and daily limit.
-4. Service creates transaction, performs transfer (deduct/credit), updates transaction to COMPLETED.
+4. Service creates transaction with "PENDING" status, performs transfer (deduct/credit), updates transaction to "COMPLETED".
 5. Service fetches external data, builds response.
 6. Controller returns 200 OK with SendMoneyResponse.
 
