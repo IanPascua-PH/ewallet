@@ -128,8 +128,6 @@ public class WalletServiceImpl implements WalletService {
 
             return buildSendMoneyResponse(transaction, sender, recipient);
         } catch (Exception ex) {
-            transaction.setTransactionStatus(TransactionStatus.FAILED.getCode());
-            transactionRepository.save(transaction);
             log.error("Transaction failed: ", ex);
             throw new TransactionFailedException("Transaction failed");
         }

@@ -1,6 +1,5 @@
 package com.api.ewallet.integration.transactionhistory;
 
-import com.api.ewallet.model.entity.User;
 import com.api.ewallet.repository.TransactionRepository;
 import com.api.ewallet.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -8,8 +7,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.MediaType;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;

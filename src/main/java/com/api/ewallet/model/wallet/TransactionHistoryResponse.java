@@ -1,6 +1,5 @@
 package com.api.ewallet.model.wallet;
 
-import com.api.ewallet.model.entity.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

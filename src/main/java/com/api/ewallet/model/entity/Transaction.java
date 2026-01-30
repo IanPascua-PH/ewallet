@@ -26,10 +26,10 @@ public class Transaction {
     @Column(name = "transaction_id", nullable = false, unique = true, length = 30)
     private String transactionId;
 
-    @Column(name = "sender_user_id", nullable = false, length = 20, unique = true)
+    @Column(name = "sender_user_id", nullable = false, length = 20)
     private String senderUserId;
 
-    @Column(name = "recipient_user_id", nullable = false, length = 20, unique = true)
+    @Column(name = "recipient_user_id", nullable = false, length = 20)
     private String recipientUserId;
 
     @Column(name = "reference_id", nullable = false, unique = true, length = 30)

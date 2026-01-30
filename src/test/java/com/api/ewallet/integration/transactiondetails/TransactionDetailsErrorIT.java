@@ -1,25 +1,18 @@
 package com.api.ewallet.integration.transactiondetails;
 
-import com.api.ewallet.configuration.properties.WalletConfigProperties;
-import com.api.ewallet.model.entity.Transaction;
 import com.api.ewallet.model.entity.User;
-import com.api.ewallet.model.entity.Wallet;
 import com.api.ewallet.repository.TransactionRepository;
 import com.api.ewallet.repository.UserRepository;
-import com.api.ewallet.repository.WalletRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.MediaType;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
