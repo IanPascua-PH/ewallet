@@ -1,4 +1,4 @@
-package com.api.ewallet.service;
+package com.api.ewallet.service.ws;
 
 
 import com.api.ewallet.model.external.ExternalUserResponse;

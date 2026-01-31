@@ -5,7 +5,7 @@ import com.api.ewallet.model.entity.User;
 import com.api.ewallet.model.external.ExternalUserResponse;
 import com.api.ewallet.repository.TransactionRepository;
 import com.api.ewallet.repository.UserRepository;
-import com.api.ewallet.service.ExternalUserService;
+import com.api.ewallet.service.ws.ExternalUserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.jpa.domain.Specification;

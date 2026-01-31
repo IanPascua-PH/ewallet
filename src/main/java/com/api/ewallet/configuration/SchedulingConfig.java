@@ -1,4 +1,4 @@
-package com.api.ewallet.configuration.properties;
+package com.api.ewallet.configuration;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;

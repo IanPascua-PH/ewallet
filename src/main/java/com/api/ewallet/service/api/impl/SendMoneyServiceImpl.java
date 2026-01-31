@@ -1,4 +1,4 @@
-package com.api.ewallet.service;
+package com.api.ewallet.service.api.impl;
 
 import com.api.ewallet.configuration.properties.WalletConfigProperties;
 import com.api.ewallet.enums.ActiveStatus;
@@ -10,22 +10,16 @@ import com.api.ewallet.model.entity.Transaction;
 import com.api.ewallet.model.entity.User;
 import com.api.ewallet.model.entity.Wallet;
 import com.api.ewallet.model.external.ExternalUserResponse;
-import com.api.ewallet.model.wallet.FriendListResponse.Friend;
 import com.api.ewallet.model.wallet.SendMoneyRequest;
 import com.api.ewallet.model.wallet.SendMoneyResponse;
-import com.api.ewallet.model.wallet.TransactionResponse;
-import com.api.ewallet.model.wallet.TransactionResponse.RecipientInfo;
-import com.api.ewallet.model.wallet.TransactionResponse.SenderInfo;
-import com.api.ewallet.model.wallet.WalletBalanceResponse;
-import com.api.ewallet.model.wallet.WalletBalanceResponse.AvailableBalance;
-import com.api.ewallet.model.wallet.WalletBalanceResponse.Limit;
 import com.api.ewallet.repository.TransactionRepository;
 import com.api.ewallet.repository.UserRepository;
 import com.api.ewallet.repository.WalletRepository;
 import com.api.ewallet.repository.specification.BaseSpecification;
 import com.api.ewallet.repository.specification.TransactionSpecification;
 import com.api.ewallet.repository.specification.UserSpecification;
-import com.api.ewallet.repository.specification.WalletSpecification;
+import com.api.ewallet.service.api.SendMoneyService;
+import com.api.ewallet.service.ws.ExternalUserService;
 import com.api.ewallet.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,64 +32,19 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Objects;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class WalletServiceImpl implements WalletService {
+public class SendMoneyServiceImpl implements SendMoneyService {
 
+    private final WalletConfigProperties walletConfigProperties;
     private final ExternalUserService externalUserService;
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
-    private final WalletConfigProperties walletConfigProperties;
-
-    @Override
-    public List<Friend> getFriendList(String userId){
-        log.info("Retrieving friend list for userId: {}", userId);
-
-        User currentUser = userRepository.findOne(UserSpecification.byUserId(userId)
-                .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
-
-        List<User> userList = userRepository.findAll();
-        log.debug("Total users found: {}", userList.size() - 1);
-
-        return userList.stream()
-                .filter(user -> !user.getUserId().equals(currentUser.getUserId()))
-                .map(this::mapToFriend)
-                .toList();
-    }
-
-    @Override
-    public WalletBalanceResponse getWalletBalance(String userId) {
-        log.info("Retrieving wallet balance for userId: {}", userId);
-
-        User currentUser = userRepository.findOne(UserSpecification.byUserId(userId)
-                        .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
-        Wallet wallet = walletRepository.findOne(WalletSpecification.byUserId(currentUser.getUserId())
-                        .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.WALLET.getCode()));
-
-        log.debug("Wallet balance for user {}: {} {}", userId, wallet.getBalance(), wallet.getCurrency());
-
-        return WalletBalanceResponse.builder()
-                .walletId(wallet.getWalletId())
-                .availableBalance(AvailableBalance.builder()
-                        .amount(wallet.getBalance())
-                        .currency(wallet.getCurrency())
-                        .build())
-                .limits(Limit.builder()
-                        .dailyLimit(wallet.getDailyLimit())
-                        .build())
-                .walletStatus(ActiveStatus.getDescription(wallet.getStatus()))
-                .lastUpdated(wallet.getUpdatedAt())
-                .build();
-    }
 
     @Override
     @Transactional(noRollbackFor = TransactionFailedException.class)
@@ -137,50 +86,6 @@ public class WalletServiceImpl implements WalletService {
         }
     }
 
-
-
-    @Override
-    public TransactionResponse getTransactionDetails(String userId, String transactionId){
-        log.info("Fetching transaction details for transactionId: {} by user: {}", transactionId, userId);
-
-        User user = userRepository.findOne(UserSpecification.byUserId(userId)
-                        .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
-
-        Transaction transaction = transactionRepository.findOne(TransactionSpecification.bySenderUserId(userId)
-                        .or(TransactionSpecification.byRecipientUserId(userId))
-                        .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.TRANSACTION.getCode()));
-
-        String description = transaction.getSenderUserId().equals(user.getUserId()) ? "Transfer Funds" : "Receive Funds";
-
-        return buildTransactionResponse(transaction, description);
-    }
-
-    @Override
-    public List<TransactionResponse> getTransactionHistory(String userId) {
-        log.info("Fetching transaction history for userId: {}", userId);
-
-        userRepository.findOne(UserSpecification.byUserId(userId)
-                        .and(BaseSpecification.isActive()))
-                .orElseThrow(() -> new NotFoundException(InvalidExceptionEnum.USER.getCode()));
-
-        List<Transaction> transactions = transactionRepository.findAll(
-                TransactionSpecification.bySenderUserId(userId)
-                        .or(TransactionSpecification.byRecipientUserId(userId))
-                        .and(BaseSpecification.isActive())
-        );
-
-        log.debug("Total transactions found for user {}: {}", userId, transactions.size());
-
-        return transactions.stream()
-                .map(transaction -> {
-                    String description = transaction.getSenderUserId().equals(userId) ? "Transfer Funds" : "Receive Funds";
-                    return buildTransactionResponse(transaction, description);
-                })
-                .toList();
-    }
-
     private User getActiveSender(String userId) {
         User user = userRepository.findOne(UserSpecification.byUserId(userId)
                         .and(BaseSpecification.isActive()))
@@ -204,42 +109,6 @@ public class WalletServiceImpl implements WalletService {
             throw new InvalidTransactionException("Invalid transaction. Recipient is not verified yet.");
         }
         return user;
-    }
-
-    private Transaction createPendingTransaction(User sender, User recipient, SendMoneyRequest request) {
-        return Transaction.builder()
-                .transactionId(IdUtil.generateTransactionId())
-                .senderUserId(sender.getUserId())
-                .recipientUserId(recipient.getUserId())
-                .referenceId(IdUtil.generateReferenceId())
-                .amount(request.getAmount())
-                .currency("PHP")
-                .transactionStatus(TransactionStatus.PENDING.getCode())
-                .status(ActiveStatus.ACTIVE.getCode())
-                .note(request.getNote())
-                .build();
-    }
-
-    private void performTransfer(String senderUserId, String recipientUserId, BigDecimal amount, Transaction transaction) {
-        deductBalance(senderUserId, amount);
-        creditBalance(recipientUserId, amount);
-
-        transaction.setTransactionStatus(TransactionStatus.COMPLETED.getCode());
-        transactionRepository.save(transaction);
-
-        log.info("Transaction {} completed successfully", transaction.getTransactionId());
-    }
-
-    private Friend mapToFriend(User user) {
-        ExternalUserResponse externalUser = externalUserService.getByUserId(user.getUserId());;
-
-        return Friend.builder()
-                .userId(user.getUserId())
-                .name(externalUser.getName())
-                .userName(externalUser.getUsername())
-                .email(externalUser.getEmail())
-                .phoneNumber(externalUser.getPhone())
-                .build();
     }
 
     private void checkDailyLimit(String userId, BigDecimal amount) {
@@ -266,6 +135,30 @@ public class WalletServiceImpl implements WalletService {
         }
     }
 
+    private Transaction createPendingTransaction(User sender, User recipient, SendMoneyRequest request) {
+        return Transaction.builder()
+                .transactionId(IdUtil.generateTransactionId())
+                .senderUserId(sender.getUserId())
+                .recipientUserId(recipient.getUserId())
+                .referenceId(IdUtil.generateReferenceId())
+                .amount(request.getAmount())
+                .currency("PHP")
+                .transactionStatus(TransactionStatus.PENDING.getCode())
+                .status(ActiveStatus.ACTIVE.getCode())
+                .note(request.getNote())
+                .build();
+    }
+
+    private void performTransfer(String senderUserId, String recipientUserId, BigDecimal amount, Transaction transaction) {
+        deductBalance(senderUserId, amount);
+        creditBalance(recipientUserId, amount);
+
+        transaction.setTransactionStatus(TransactionStatus.COMPLETED.getCode());
+        transactionRepository.save(transaction);
+
+        log.info("Transaction {} completed successfully", transaction.getTransactionId());
+    }
+
     private void deductBalance(String userId, BigDecimal amount) {
         log.debug("Deducting {} from userId: {}", amount, userId);
         Wallet wallet = walletRepository.findByUserId(userId)
@@ -275,7 +168,7 @@ public class WalletServiceImpl implements WalletService {
         wallet.setBalance(newBalance);
         walletRepository.save(wallet);
 
-        log.debug("New balance for userId {}: {}", userId, newBalance);
+        log.debug("New balance for sender {}: {}", userId, newBalance);
     }
 
     private void creditBalance(String userId, BigDecimal amount) {
@@ -287,7 +180,7 @@ public class WalletServiceImpl implements WalletService {
         wallet.setBalance(newBalance);
         walletRepository.save(wallet);
 
-        log.debug("New balance for userId {}: {}", userId, newBalance);
+        log.debug("New balance for recipient {}: {}", userId, newBalance);
     }
 
     private SendMoneyResponse buildSendMoneyResponse(
@@ -302,38 +195,9 @@ public class WalletServiceImpl implements WalletService {
                 .build();
     }
 
-    private TransactionResponse buildTransactionResponse(
-           Transaction transaction, String description) {
-        ExternalUserResponse sender = externalUserService.getByUserId(transaction.getSenderUserId());
-        ExternalUserResponse recipient = externalUserService.getByUserId(transaction.getRecipientUserId());
-
-        return TransactionResponse.builder()
-                .transactionId(transaction.getTransactionId())
-                .referenceId(transaction.getReferenceId())
-                .description(description)
-                .senderInfo(SenderInfo.builder()
-                        .username(sender.getUsername())
-                        .name(sender.getName())
-                        .email(sender.getEmail())
-                        .phoneNumber(sender.getPhone())
-                        .senderNote(transaction.getNote())
-                        .build())
-                .recipientInfo(RecipientInfo.builder()
-                        .username(recipient.getUsername())
-                        .name(recipient.getName())
-                        .email(recipient.getEmail())
-                        .phoneNumber(recipient.getPhone())
-                        .build())
-                .amount(transaction.getAmount())
-                .currency(transaction.getCurrency())
-                .status(TransactionStatus.getDescription(transaction.getTransactionStatus()))
-                .build();
-    }
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateTransactionStatus(Transaction transaction, String status) {
         transaction.setTransactionStatus(status);
         transactionRepository.save(transaction);
     }
-
 }

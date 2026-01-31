@@ -1,8 +1,9 @@
-package com.api.ewallet.service;
+package com.api.ewallet.service.ws.impl;
 
 import com.api.ewallet.configuration.properties.ExternalUserConfigProperties;
 import com.api.ewallet.exception.InternalServerException;
 import com.api.ewallet.model.external.ExternalUserResponse;
+import com.api.ewallet.service.ws.ExternalUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -2,7 +2,7 @@ package com.api.ewallet.controller;
 
 import com.api.ewallet.model.wallet.*;
 import com.api.ewallet.model.wallet.FriendListResponse.Friend;
-import com.api.ewallet.service.WalletService;
+import com.api.ewallet.service.api.*;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +16,18 @@ import java.util.List;
 @RequestMapping("/v1/api/wallet")
 public class WalletController implements WalletControllerApi {
 
-    private final WalletService walletService;
+    private final FriendListService friendListService;
+    private final InquireBalanceService inquireBalanceService;
+    private final TransactionDetailsService transactionDetailsService;
+    private final TransactionHistoryService transactionHistoryService;
+    private final SendMoneyService sendMoneyService;
 
     @Override
     @GetMapping("/getFriendList")
     public ResponseEntity<FriendListResponse> getFriendList(
             @Parameter(description = "User ID passed in header", required = true)
             @RequestHeader("X-User-Id") String userId) {
-        List<Friend> friendList = walletService.getFriendList(userId);
+        List<Friend> friendList = friendListService.getFriendList(userId);
         FriendListResponse response = FriendListResponse.builder()
                 .friendList(friendList)
                 .build();
@@ -36,7 +40,7 @@ public class WalletController implements WalletControllerApi {
             @Parameter(description = "User ID passed in header", required = true)
             @RequestHeader("X-User-Id") String userId) {
 
-        return ResponseEntity.ok(walletService.getWalletBalance(userId));
+        return ResponseEntity.ok(inquireBalanceService.inquireBalance(userId));
     }
 
     @Override
@@ -45,14 +49,14 @@ public class WalletController implements WalletControllerApi {
             @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId,
             @Parameter(description = "Transaction ID", required = true) @PathVariable String txnId) {
 
-        return ResponseEntity.ok(walletService.getTransactionDetails(userId, txnId));
+        return ResponseEntity.ok(transactionDetailsService.getTransactionDetails(userId, txnId));
     }
 
     @Override
     @GetMapping("/transactionHistory")
     public ResponseEntity<TransactionHistoryResponse> getTransactionHistory(
             @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId) {
-        List<TransactionResponse> transactions = walletService.getTransactionHistory(userId);
+        List<TransactionResponse> transactions = transactionHistoryService.getTransactionHistory(userId);
         TransactionHistoryResponse response = TransactionHistoryResponse.builder()
                 .transactions(transactions)
                 .build();
@@ -66,7 +70,7 @@ public class WalletController implements WalletControllerApi {
             @Parameter(description = "User ID passed in header", required = true) @RequestHeader("X-User-Id") String userId,
             @Parameter(description = "Send Money Request", required = true) @Valid @RequestBody SendMoneyRequest request) {
 
-        return ResponseEntity.ok(walletService.initiateSendMoney(userId, request));
+        return ResponseEntity.ok(sendMoneyService.initiateSendMoney(userId, request));
     }
 
 }
