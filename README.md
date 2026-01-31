@@ -96,13 +96,15 @@ The API is documented using OpenAPI/Swagger. Below is a summary of the endpoints
 
 ### Class Diagram
 ```
-+----------------+     +-----------------+     +-----------------+
-|  Controller    |     |    Service      |     |   Repository    |
-+----------------+     +-----------------+     +-----------------+
-| WalletController| --> | WalletService  | --> | UserRepository  |
-|                 |     |                 |     | WalletRepository|
-|                 |     |                 |     | TransactionRepo |
-+----------------+     +-----------------+     +-----------------+
++----------------+     +-----------------------+     +-----------------+
+|  Controller    |     |       Service         |     |   Repository    |
++----------------+     +-----------------------+     +-----------------+
+| WalletController| --> | FriendListService     | --> | UserRepository  |
+|                 | --> | InquireBalanceService | --> | WalletRepository|
+|                 | --> | SendMoneyService      | --> | TransactionRepo |
+|                 | --> | TransactionDetailsSvc | --> | TransactionRepo |
+|                 | --> | TransactionHistorySvc | --> | TransactionRepo |
++----------------+     +-----------------------+     +-----------------+
           |                       |                       |
           v                       v                       v
 +----------------+     +-----------------+     +-----------------+
@@ -116,7 +118,7 @@ The API is documented using OpenAPI/Swagger. Below is a summary of the endpoints
 
 ### Sequence Diagram (Get Friend List)
 1. User sends GET /getFriendList with userId header.
-2. Controller calls Service.getFriendList(userId).
+2. Controller calls service getFriendList(userId).
 3. Service fetches current user, fetches all users, filters out current user.
 4. Service maps users to friends using external service.
 5. Service returns friend list.
@@ -124,13 +126,13 @@ The API is documented using OpenAPI/Swagger. Below is a summary of the endpoints
 
 ### Sequence Diagram (Get Wallet Balance)
 1. User sends GET /getWalletBalance with userId header.
-2. Controller calls Service.getWalletBalance(userId).
+2. Controller calls service getWalletBalance(userId).
 3. Service fetches user and wallet, builds response.
 4. Controller returns 200 OK with WalletBalanceResponse.
 
 ### Sequence Diagram (Send Money)
 1. User sends POST /sendMoney with userId and request.
-2. Controller validates header, calls Service.initiateSendMoney().
+2. Controller validates header, calls service initiateSendMoney().
 3. Service validates users, checks balance and daily limit.
 4. Service creates transaction with "PENDING" status, performs transfer (deduct/credit), updates transaction to "COMPLETED".
 5. Service fetches external data, builds response.
@@ -138,12 +140,12 @@ The API is documented using OpenAPI/Swagger. Below is a summary of the endpoints
 
 ### Sequence Diagram (Get Transaction Details)
 1. User sends GET /transactionDetails/{txnId} with userId header.
-2. Controller calls Service.getTransactionDetails(userId, txnId).
+2. Controller calls service getTransactionDetails(userId, txnId).
 3. Service fetches user and transaction, builds response with external data.
 4. Controller returns 200 OK with TransactionResponse.
 
 ### Sequence Diagram (Get Transaction History)
 1. User sends GET /transactionHistory with userId header.
-2. Controller calls Service.getTransactionHistory(userId).
+2. Controller calls service getTransactionHistory(userId).
 3. Service fetches user, fetches transactions, maps to responses with external data.
 4. Controller returns 200 OK with TransactionHistoryResponse.
