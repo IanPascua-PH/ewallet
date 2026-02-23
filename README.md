@@ -1,7 +1,7 @@
-# EWallet Microservice
+# EWallet Service
 
 ## Overview
-This is a Spring Boot-based e-wallet microservice that provides functionalities for user management, wallet operations, and transactions. It includes features like getting friend lists, checking wallet balances, sending money, and retrieving transaction histories.
+This is a Spring Boot-based e-wallet service that provides functionalities for user management, wallet operations, and transactions. It includes features like getting friend lists, checking wallet balances, sending money, and retrieving transaction histories.
 
 ## Run Instructions
 
